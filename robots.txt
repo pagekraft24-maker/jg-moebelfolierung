@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://jg-moebelfolierung.de/sitemap.xml
