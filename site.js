@@ -87,6 +87,26 @@
     });
   });
 
+  // FAQ in Blog-Artikeln (Buttons ohne aria-expanded)
+  document.querySelectorAll("button:not([aria-expanded])").forEach(function (b) {
+    var q = b.textContent.trim(), a = D.faq[q];
+    if (!a) return;
+    var box = b.nextElementSibling, isOpen = !!box;
+    if (!box) {
+      box = document.createElement("div");
+      var p = document.createElement("p"); p.textContent = a;
+      p.style.cssText = "font-family:Inter,sans-serif;font-size:0.88rem;line-height:1.8;color:rgb(107,107,107);padding:0 24px 24px;margin:0;font-weight:300";
+      box.appendChild(p); b.parentNode.appendChild(box);
+    }
+    box.style.display = isOpen ? "" : "none";
+    var icon = b.querySelector("i");
+    b.addEventListener("click", function () {
+      isOpen = !isOpen;
+      box.style.display = isOpen ? "" : "none";
+      if (icon) icon.className = icon.className.replace(/ri-(add|subtract)-line/, isOpen ? "ri-subtract-line" : "ri-add-line");
+    });
+  });
+
   // Kundenstimmen
   var dots = document.querySelectorAll('button[aria-label^="Bewertung"]');
   if (dots.length && D.reviews.length) {
