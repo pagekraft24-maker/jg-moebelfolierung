@@ -162,3 +162,70 @@
     location.href = "mailto:gottmannjascha@gmail.com?subject=" + encodeURIComponent("Anfrage über die Website") + "&body=" + encodeURIComponent(body);
   });
 })();
+
+// ===== Cookie-Banner + Meta-Pixel (lädt erst nach Zustimmung) =====
+(function () {
+  var PIXEL_ID = ""; // <- Meta-Pixel-ID hier eintragen
+  var KEY = "jg-consent", GOLD = "rgb(184, 149, 106)", DARK = "rgb(44, 44, 44)";
+  function get() { try { return localStorage.getItem(KEY); } catch (e) { return null; } }
+  function set(v) { try { localStorage.setItem(KEY, v); } catch (e) {} }
+
+  function loadPixel() {
+    if (!PIXEL_ID || window.fbq) return;
+    !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
+    n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
+    document,'script','https://connect.facebook.net/en_US/fbevents.js');
+    fbq("init", PIXEL_ID);
+    fbq("track", "PageView");
+    var p = location.pathname;
+    if (/^\/moebelfolierung-|^\/blog\/.+/.test(p)) fbq("track", "ViewContent", { content_name: document.title });
+  }
+  function track(ev, data) { if (window.fbq) fbq("track", ev, data || {}); }
+
+  // Events
+  document.addEventListener("click", function (e) {
+    var a = e.target.closest && e.target.closest("a[href]");
+    if (!a) return;
+    var h = a.getAttribute("href");
+    if (h.indexOf("wa.me") > -1) track("Contact", { method: "WhatsApp" });
+    else if (h.indexOf("tel:") === 0) track("Contact", { method: "Telefon" });
+  }, true);
+  var form = document.querySelector("form[data-readdy-form]");
+  if (form) form.addEventListener("submit", function () {
+    if (!form.querySelector('[name="website_alt"]').value) track("Lead", { content_name: "Kontaktformular" });
+  }, true);
+
+  // Banner
+  function banner() {
+    var old = document.getElementById("jg-cookie"); if (old) old.remove();
+    var d = document.createElement("div"); d.id = "jg-cookie";
+    d.setAttribute("role", "dialog"); d.setAttribute("aria-label", "Cookie-Einstellungen");
+    d.style.cssText = "position:fixed;left:16px;right:16px;bottom:16px;z-index:70;max-width:560px;margin-left:auto;background:#fff;border:1px solid rgb(232,226,220);box-shadow:0 18px 40px rgba(0,0,0,0.12);padding:24px;font-family:Inter,sans-serif";
+    d.innerHTML =
+      '<p style="font-family:Montserrat,sans-serif;font-weight:600;font-size:0.62rem;letter-spacing:0.14em;text-transform:uppercase;color:' + GOLD + ';margin:0 0 10px">Cookies & Datenschutz</p>' +
+      '<p style="font-size:0.85rem;line-height:1.7;color:rgb(90,90,90);font-weight:300;margin:0 0 18px">Wir verwenden notwendige Cookies für den Betrieb der Website. Mit Ihrer Zustimmung nutzen wir zusätzlich den Meta-Pixel, um die Wirkung unserer Werbung zu messen. Mehr in der <a href="/datenschutz/" style="color:' + DARK + ';text-decoration:underline">Datenschutzerklärung</a>.</p>' +
+      '<div style="display:flex;gap:10px;flex-wrap:wrap">' +
+      '<button data-c="no" style="flex:1 1 160px;cursor:pointer;padding:12px 16px;background:#fff;border:1px solid ' + DARK + ';color:' + DARK + ';font-family:Montserrat,sans-serif;font-weight:600;font-size:0.62rem;letter-spacing:0.12em;text-transform:uppercase">Nur notwendige</button>' +
+      '<button data-c="yes" style="flex:1 1 160px;cursor:pointer;padding:12px 16px;background:' + DARK + ';border:1px solid ' + DARK + ';color:#fff;font-family:Montserrat,sans-serif;font-weight:600;font-size:0.62rem;letter-spacing:0.12em;text-transform:uppercase">Alle akzeptieren</button></div>';
+    d.addEventListener("click", function (e) {
+      var c = e.target.getAttribute && e.target.getAttribute("data-c"); if (!c) return;
+      set(c); d.remove(); if (c === "yes") loadPixel(); else if (window.fbq) location.reload();
+    });
+    document.body.appendChild(d);
+  }
+  window.jgCookieSettings = banner;
+
+  // Link "Cookie-Einstellungen" im Footer
+  var foot = document.querySelector('footer a[href="/datenschutz/"]');
+  if (foot) {
+    var l = foot.cloneNode(false); l.removeAttribute("href"); l.className = ""; l.textContent = "Cookie-Einstellungen";
+    l.setAttribute("role", "button"); l.style.cursor = "pointer";
+    l.addEventListener("click", banner);
+    foot.parentNode.appendChild(l);
+  }
+
+  var c = get();
+  if (c === "yes") loadPixel(); else if (!c) banner();
+})();
