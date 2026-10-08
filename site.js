@@ -151,16 +151,53 @@
     if (s && photos.files.length) s.textContent = photos.files.length + " Datei(en) ausgewählt";
   });
 
-  // Formular-Versand (vorläufig per E-Mail-Programm, bis ein Formular-Dienst angebunden ist)
+  // Formular-Versand über Web3Forms
+  var WEB3FORMS_KEY = ""; // <- Access Key von web3forms.com hier eintragen
   var form = document.querySelector("form[data-readdy-form]");
-  if (form) form.addEventListener("submit", function (e) {
-    e.preventDefault();
-    var f = new FormData(form);
-    if (f.get("website_alt")) return;
-    var body = "Name: " + f.get("name") + "\nTelefon: " + (f.get("phone") || "") + "\nE-Mail: " + f.get("email") +
-      "\nThema: " + (f.get("topic") || "") + "\n\n" + (f.get("message") || "");
-    location.href = "mailto:gottmannjascha@gmail.com?subject=" + encodeURIComponent("Anfrage über die Website") + "&body=" + encodeURIComponent(body);
-  });
+  if (form) {
+    var btn = form.querySelector('button[type="submit"]'), btnHtml = btn ? btn.innerHTML : "";
+    var msg = document.createElement("p");
+    msg.setAttribute("role", "status");
+    msg.style.cssText = "display:none;font-family:Inter,sans-serif;font-size:0.88rem;line-height:1.7;padding:14px 18px;margin:0";
+    form.appendChild(msg);
+    function show(ok, text) {
+      msg.style.display = "block"; msg.textContent = text;
+      msg.style.background = ok ? "rgb(240, 247, 241)" : "rgb(252, 241, 239)";
+      msg.style.color = ok ? "rgb(46, 110, 64)" : "rgb(160, 52, 40)";
+      msg.style.border = "1px solid " + (ok ? "rgb(196, 224, 203)" : "rgb(240, 200, 193)");
+    }
+    var FAIL = "Leider konnte Ihre Anfrage nicht gesendet werden. Bitte rufen Sie uns an (0157 35626023) oder schreiben Sie uns per WhatsApp.";
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      var f = new FormData(form);
+      if (f.get("website_alt")) return;
+      if (!WEB3FORMS_KEY) { show(false, FAIL); return; }
+      var d = new FormData();
+      d.append("access_key", WEB3FORMS_KEY);
+      d.append("subject", "Neue Anfrage über jg-moebelfolierung.de – " + (f.get("topic") || ""));
+      d.append("from_name", "JAGIS Website");
+      d.append("Name", f.get("name") || "");
+      d.append("Telefon", f.get("phone") || "");
+      d.append("email", f.get("email") || "");
+      d.append("Thema", f.get("topic") || "");
+      d.append("Nachricht", f.get("message") || "");
+      var n = photos && photos.files ? photos.files.length : 0;
+      if (n) d.append("Fotos", n + " Foto(s) ausgewählt – bitte beim Kunden per WhatsApp oder E-Mail anfordern");
+      if (btn) { btn.disabled = true; btn.textContent = "Wird gesendet …"; }
+      fetch("https://api.web3forms.com/submit", { method: "POST", body: d, headers: { Accept: "application/json" } })
+        .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { return r.ok && j.success; }); })
+        .then(function (ok) {
+          if (ok) {
+            form.reset();
+            form.querySelectorAll('input[name="topic"]').forEach(function (x) { x.dispatchEvent(new Event("change")); });
+            show(true, "Vielen Dank! Ihre Anfrage ist bei uns eingegangen. Wir melden uns schnellstmöglich bei Ihnen.");
+            document.dispatchEvent(new CustomEvent("jg-lead"));
+          } else show(false, FAIL);
+        })
+        .catch(function () { show(false, FAIL); })
+        .then(function () { if (btn) { btn.disabled = false; btn.innerHTML = btnHtml; } });
+    });
+  }
 })();
 
 // ===== Cookie-Banner + Meta-Pixel (lädt erst nach Zustimmung) =====
@@ -192,10 +229,7 @@
     if (h.indexOf("wa.me") > -1) track("Contact", { method: "WhatsApp" });
     else if (h.indexOf("tel:") === 0) track("Contact", { method: "Telefon" });
   }, true);
-  var form = document.querySelector("form[data-readdy-form]");
-  if (form) form.addEventListener("submit", function () {
-    if (!form.querySelector('[name="website_alt"]').value) track("Lead", { content_name: "Kontaktformular" });
-  }, true);
+  document.addEventListener("jg-lead", function () { track("Lead", { content_name: "Kontaktformular" }); });
 
   // Banner
   function banner() {
