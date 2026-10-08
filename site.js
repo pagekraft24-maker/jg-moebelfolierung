@@ -218,7 +218,8 @@
   window.jgCookieSettings = banner;
 
   // Link "Cookie-Einstellungen" im Footer
-  var foot = document.querySelector('footer a[href="/datenschutz/"]');
+  var fl = document.querySelectorAll('footer a[href="/datenschutz/"]');
+  var foot = fl.length ? fl[fl.length - 1] : null;
   if (foot) {
     var l = foot.cloneNode(false); l.removeAttribute("href"); l.className = ""; l.textContent = "Cookie-Einstellungen";
     l.setAttribute("role", "button"); l.style.cursor = "pointer";
