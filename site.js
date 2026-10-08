@@ -152,7 +152,7 @@
   });
 
   // Formular-Versand über Web3Forms
-  var WEB3FORMS_KEY = ""; // <- Access Key von web3forms.com hier eintragen
+  var WEB3FORMS_KEY = "372dc10d-5302-4cbc-a7a4-afdac5b2b223"; // <- Access Key von web3forms.com hier eintragen
   var form = document.querySelector("form[data-readdy-form]");
   if (form) {
     var btn = form.querySelector('button[type="submit"]'), btnHtml = btn ? btn.innerHTML : "";
